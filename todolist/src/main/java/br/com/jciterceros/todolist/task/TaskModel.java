@@ -25,7 +25,7 @@ import lombok.Data;
 
 @Data
 @Entity(name = "tb_tasks")
-public class TaslModel {
+public class TaskModel {
 
     @Id
     @GeneratedValue(generator = "UUID")
