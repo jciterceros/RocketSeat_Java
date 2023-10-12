@@ -24,35 +24,42 @@ public class FiltertaskAuth extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Pegar a autenticação (usuario e senha)
-        var authorization = request.getHeader("Authorization");
-        System.out.println("Authorization: " + authorization);
+        var servletPath = request.getServletPath();
 
-        var authEncoded = authorization.substring("Basic ".length()).trim();
-        byte[] authDecode = Base64.getDecoder().decode(authEncoded);
+        if (servletPath.equals("/tasks/")) {
+            // Pegar a autenticação (usuario e senha)
+            var authorization = request.getHeader("Authorization");
+            System.out.println("Authorization: " + authorization);
 
-        var authString = new String(authDecode);
-        String[] credentials = authString.split(":");
-        var username = credentials[0];
-        var password = credentials[1];
-        System.out.println("Username: " + username);
-        System.out.println("Password: " + password);
+            var authEncoded = authorization.substring("Basic".length()).trim();
+            byte[] authDecode = Base64.getDecoder().decode(authEncoded);
 
-        // Validar usuario
-        var user = this.userRepository.findByUsername(username);
-        if (user == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-        } else {
-            System.out.println("User: " + user.getUsername());
-            // Validar senha
-            var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
-            if (!passwordVerify.verified) {
-                filterChain.doFilter(request, response);
-            } else {
+            var authString = new String(authDecode);
+            String[] credentials = authString.split(":");
+            String username = credentials[0];
+            String password = credentials[1];
+            System.out.println("Username: " + username);
+            System.out.println("Password: " + password);
+
+            // Validar usuario
+            var user = this.userRepository.findByUsername(username);
+            if (user == null) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            } else {
+                System.out.println("User: " + user.getUsername());
+                // Validar senha
+                var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
+                if (passwordVerify.verified) {
+                    filterChain.doFilter(request, response);
+                } else {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                }
+                // Segue o fluxo
             }
-            // Segue o fluxo
+        } else {
+            filterChain.doFilter(request, response);
         }
+
     }
 
 }
